@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../home_ui/home_bloc/contacts/contacts_bloc.dart';
-import 'contact_call_selection_page.dart';
+import 'contact_selection_page.dart';
 
 class ContactsPage extends StatelessWidget {
   const ContactsPage({super.key});
@@ -14,12 +14,20 @@ class ContactsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Contacts to Call"),
         actions: [
-          IconButton(                                         
+          IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ContactSelectionPage()),
+                MaterialPageRoute(
+                  builder: (context) => GenericContactSelectionPage(
+                    title: 'Select Contacts to Call',
+                    bloc: context.read<ContactsBloc>(),
+                    onContactAdd: (contact) {
+                      context.read<ContactsBloc>().add(SelectContactEvent(contact: contact));
+                    },
+                  ),
+                ),
               );
             },
           ),

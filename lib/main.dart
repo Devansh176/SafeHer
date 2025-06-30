@@ -7,6 +7,7 @@ import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart
 import 'package:safer/repositories/contacts_repository.dart';
 import 'firebase_options.dart';
 import 'home/home_ui/homePage.dart';
+import 'home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
 import 'login/login_ui/loginPage.dart';
 
 void main() async {
@@ -25,11 +26,14 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => ContactsBloc(ContactsRepository()),
+          create: (_) => ContactsBloc(ContactsRepository()),
         ),
         BlocProvider(
-          create: (context) => LocationSharingBloc(),
-        )
+          create: (_) => LocationContactsBloc(ContactsRepository()),
+        ),
+        BlocProvider(
+          create: (_) => LocationSharingBloc(),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

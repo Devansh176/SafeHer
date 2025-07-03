@@ -5,13 +5,16 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:safer/home/contacts_ui/contacts_call_page.dart';
 import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart';
+import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
 
 import '../../login/login_ui/loginPage.dart';
 import '../contacts_ui/Contact_location_Page.dart';
 import 'elevated_cards/elevatedCard.dart';
+import 'home_bloc/alert/alert.dart';
 import 'home_bloc/call/call_bloc.dart';
 import 'home_bloc/call/utils/call_utils.dart';
 import 'home_bloc/contacts/contacts_bloc.dart';
+import 'home_bloc/location_contacts/location_contacts_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +25,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String displayName = "";
+  bool isAlertPlaying = false;
 
   @override
   void initState() {
@@ -126,7 +130,7 @@ class _HomePageState extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ContactLocationPage(),
+                      builder: (context) => LocationContactsPage(),
                     ),
                   );
                 },
@@ -219,9 +223,15 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.blue,
                       label: "Location",
                       onTap: () async {
-                        final state = context.read<ContactsBloc>().state;
-                        if (state is ContactsLoaded) {
-                          context.read<LocationSharingBloc>().add(ShareLocationEvent(selectedContacts: state.selectedContacts));
+                        final state = context.read<LocationContactsBloc>().state;
+                        if (state is LocationContactsLoaded) {
+                          context.read<LocationSharingBloc>().add(
+                            ShareLocationEvent(selectedContacts: state.selectedLocationContacts),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('No contacts selected or not loaded yet')),
+                          );
                         }
                       },
                     ),
@@ -232,23 +242,26 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedCard(
-                      icon: Icons.access_alarms,
-                      color: Colors.orange,
-                      label: "Alarm",
-                      onTap: () {  },
-                    ),
-                    ElevatedCard(
                       icon: Icons.local_police_outlined,
                       color: Colors.purple,
                       label: "Police", onTap: () {  },
                     ),
-                    // ElevatedCard(
-                    //   icon: Icons.warning_amber,
-                    //   color: Colors.red[900]!,
-                    //   label: "Alert", onTap: () {
-                    //     sendSmsToAlertContacts(context);
-                    //   },
-                    // ),
+
+                    ElevatedCard(
+                      icon: isAlertPlaying ? Icons.stop_circle_outlined : Icons.warning_amber,
+                      color: Colors.red[900]!,
+                      label: isAlertPlaying ? "Stop" : "Alert",
+                      onTap: () async {
+                        if (isAlertPlaying) {
+                          await stopAlertSound();
+                        } else {
+                          await playAlertSound();
+                        }
+                        setState(() {
+                          isAlertPlaying = !isAlertPlaying;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ],

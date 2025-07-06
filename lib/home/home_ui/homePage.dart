@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:safer/home/chatbot/chatbot_page.dart';
 import 'package:safer/home/contacts_ui/contacts_call_page.dart';
 import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart';
 import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
@@ -272,6 +273,17 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatBotPage(),
+              ),
+            );
+          },
+          child: Icon(Icons.chat_bubble),
         ),
       ),
     );

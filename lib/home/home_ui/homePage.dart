@@ -8,6 +8,7 @@ import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart
 import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
 
 import '../../login/login_ui/loginPage.dart';
+import '../SOS.dart';
 import '../contacts_ui/Contact_location_Page.dart';
 import 'elevated_cards/elevatedCard.dart';
 import 'home_bloc/alert/alert.dart';
@@ -208,7 +209,11 @@ class _HomePageState extends State<HomePage> {
                       icon: Icons.sos,
                       color: Colors.red,
                       label: "SOS",
-                      onTap: () {  },
+                      onTap: () => SOSHandler.triggerSOS(context, (val) {
+                          setState(() {
+                            isAlertPlaying = val;
+                          });
+                      }),
                     ),
                     ElevatedCard(
                       icon: Icons.call,
@@ -241,11 +246,11 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedCard(
-                      icon: Icons.local_police_outlined,
-                      color: Colors.purple,
-                      label: "Police", onTap: () {  },
-                    ),
+                    // ElevatedCard(
+                    //   icon: Icons.local_police_outlined,
+                    //   color: Colors.purple,
+                    //   label: "Police", onTap: () {  },
+                    // ),
 
                     ElevatedCard(
                       icon: isAlertPlaying ? Icons.stop_circle_outlined : Icons.warning_amber,

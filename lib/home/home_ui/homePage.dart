@@ -224,23 +224,6 @@ class _HomePageState extends State<HomePage> {
                         clickToCall(context);
                       },
                     ),
-                    ElevatedCard(
-                      icon: Icons.location_on,
-                      color: Colors.blue,
-                      label: "Location",
-                      onTap: () async {
-                        final state = context.read<LocationContactsBloc>().state;
-                        if (state is LocationContactsLoaded) {
-                          context.read<LocationSharingBloc>().add(
-                            ShareLocationEvent(selectedContacts: state.selectedLocationContacts),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('No contacts selected or not loaded yet')),
-                          );
-                        }
-                      },
-                    ),
                   ],
                 ),
                 SizedBox(height: height * 0.05),
@@ -266,6 +249,23 @@ class _HomePageState extends State<HomePage> {
                         setState(() {
                           isAlertPlaying = !isAlertPlaying;
                         });
+                      },
+                    ),
+                    ElevatedCard(
+                      icon: Icons.location_on,
+                      color: Colors.blue,
+                      label: "Location",
+                      onTap: () async {
+                        final state = context.read<LocationContactsBloc>().state;
+                        if (state is LocationContactsLoaded) {
+                          context.read<LocationSharingBloc>().add(
+                            ShareLocationEvent(selectedContacts: state.selectedLocationContacts),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('No contacts selected or not loaded yet')),
+                          );
+                        }
                       },
                     ),
                   ],

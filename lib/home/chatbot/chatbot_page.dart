@@ -38,7 +38,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.3:8080/api/chatbot'), // Replace with your Spring Boot backend IP
+        Uri.parse('http://192.168.1.3:8080/api/chatbot'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'message': input}),
       );

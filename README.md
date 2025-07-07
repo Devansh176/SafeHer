@@ -53,7 +53,7 @@
 
 1. Clone the frontend:
    ```bash
-   git clone https://github.com/your-username/safeher-app.git
+   git clone https://github.com/Devansh176/safeher-app.git
    cd safeher-app
    ```
 

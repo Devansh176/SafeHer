@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'chat_message.dart';
 
 class ChatBotPage extends StatefulWidget {
@@ -34,28 +36,58 @@ class _ChatBotPageState extends State<ChatBotPage> {
   void _getBotResponse(String input) async {
     setState(() => _isBotTyping = true);
 
-    await Future.delayed(const Duration(milliseconds: 1500)); // Simulate API call
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.1.3:8080/api/chatbot'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': input}),
+      );
 
-    final botReply = "This is a smart response to: \"$input\" (Imagine it came from Spring Boot + OpenAI)";
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final botReply = json['response'] ?? 'Sorry, I didn\'t understand that.';
 
-    setState(() {
-      _messages.add({
-        'text': botReply,
-        'isUser': false,
-        'timestamp': DateTime.now(),
+        setState(() {
+          _messages.add({
+            'text': botReply,
+            'isUser': false,
+            'timestamp': DateTime.now(),
+          });
+          _isBotTyping = false;
+        });
+      } else {
+        setState(() {
+          _messages.add({
+            'text': 'Server error: ${response.statusCode}',
+            'isUser': false,
+            'timestamp': DateTime.now(),
+          });
+          _isBotTyping = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'text': 'Failed to connect to backend.',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+        _isBotTyping = false;
       });
-      _isBotTyping = false;
-    });
+    }
+
     _scrollToBottom();
   }
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 120,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 120,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -80,10 +112,10 @@ class _ChatBotPageState extends State<ChatBotPage> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: Row(
-                      children: [
-                        const CircleAvatar(radius: 12, backgroundColor: Colors.grey),
-                        const SizedBox(width: 8),
-                        const Text("Typing...", style: TextStyle(color: Colors.grey)),
+                      children: const [
+                        CircleAvatar(radius: 12, backgroundColor: Colors.grey),
+                        SizedBox(width: 8),
+                        Text("Typing...", style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   );
@@ -105,7 +137,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 3)),
                 ],
               ),
@@ -117,7 +149,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: _sendMessage,
                       decoration: const InputDecoration(
-                        hintText: "Ask about safe routes or features...",
+                        hintText: "Ask about SOS, Safe Routes, or Call features...",
                         border: InputBorder.none,
                       ),
                     ),

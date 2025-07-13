@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:safer/home/chatbot/chat_history_page.dart';
 import 'chat_message.dart';
 
 class ChatBotPage extends StatefulWidget {
@@ -16,6 +18,41 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
   final List<Map<String, dynamic>> _messages = [];
   bool _isBotTyping = false;
+
+  late final String userUid;
+
+  @override
+  void initState() {
+    super.initState();
+    userUid = FirebaseAuth.instance.currentUser!.uid;
+    _loadChatHistory();
+  }
+
+  void _loadChatHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.3:8080/api/chat/history'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-USER-UID': userUid,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> chatList = jsonDecode(response.body);
+        setState(() {
+          _messages.clear();
+          _messages.addAll(chatList.map((msg) => {
+            'text': msg['text'],
+            'isUser': msg['isUser'] == true,
+            'timestamp': DateTime.tryParse(msg['timestamp'] ?? '') ?? DateTime.now(),
+          }));
+        });
+      }
+    } catch (e) {
+      print("Failed to load history: $e");
+    }
+  }
 
   void _sendMessage(String userText) {
     if (userText.trim().isEmpty) return;
@@ -38,8 +75,11 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.3:8080/api/chatbot'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://192.168.1.3:8080/api/chat'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-USER-UID': userUid,
+        },
         body: jsonEncode({'message': input}),
       );
 
@@ -99,6 +139,19 @@ class _ChatBotPageState extends State<ChatBotPage> {
         title: const Text("SafeHer Assistant"),
         backgroundColor: Colors.green[700],
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ChatHistoryPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:safer/home/chatbot/chat_history_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'chat_message.dart';
+import 'chat_history_page.dart';
 
 class ChatBotPage extends StatefulWidget {
   const ChatBotPage({super.key});
@@ -15,23 +17,43 @@ class ChatBotPage extends StatefulWidget {
 class _ChatBotPageState extends State<ChatBotPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
   final List<Map<String, dynamic>> _messages = [];
-  bool _isBotTyping = false;
 
-  late final String userUid;
+  bool _isBotTyping = false;
+  late String userUid;
+  late String currentSessionId;
 
   @override
   void initState() {
     super.initState();
     userUid = FirebaseAuth.instance.currentUser!.uid;
+    _initSession();
+  }
+
+  Future<void> _initSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    currentSessionId = prefs.getString('currentSessionId') ?? '';
+
+    if (currentSessionId.isEmpty) {
+      final response = await http.post(
+        Uri.parse('http://192.168.1.3:8080/api/chat/session'),
+        headers: {'X-USER-UID': userUid},
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        currentSessionId = json['sessionId'];
+        await prefs.setString('currentSessionId', currentSessionId);
+      }
+    }
+
     _loadChatHistory();
   }
 
   void _loadChatHistory() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.3:8080/api/chat/history'),
+        Uri.parse('http://192.168.1.3:8080/api/chat/history/$currentSessionId'),
         headers: {
           'Content-Type': 'application/json',
           'X-USER-UID': userUid,
@@ -45,9 +67,11 @@ class _ChatBotPageState extends State<ChatBotPage> {
           _messages.addAll(chatList.map((msg) => {
             'text': msg['text'],
             'isUser': msg['isUser'] == true,
-            'timestamp': DateTime.tryParse(msg['timestamp'] ?? '') ?? DateTime.now(),
+            'timestamp': DateTime.tryParse(msg['timestamp'] ?? '') ??
+                DateTime.now(),
           }));
         });
+        _scrollToBottom();
       }
     } catch (e) {
       print("Failed to load history: $e");
@@ -64,10 +88,11 @@ class _ChatBotPageState extends State<ChatBotPage> {
         'timestamp': DateTime.now(),
       });
     });
+
     _controller.clear();
     _scrollToBottom();
 
-    _getBotResponse(userText);
+    _getBotResponse(userText.trim());
   }
 
   void _getBotResponse(String input) async {
@@ -80,12 +105,16 @@ class _ChatBotPageState extends State<ChatBotPage> {
           'Content-Type': 'application/json',
           'X-USER-UID': userUid,
         },
-        body: jsonEncode({'message': input}),
+        body: jsonEncode({
+          'message': input,
+          'sessionId': currentSessionId,
+        }),
       );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        final botReply = json['response'] ?? 'Sorry, I didn\'t understand that.';
+        final botReply =
+            json['response'] ?? 'Sorry, I didn\'t understand that.';
 
         setState(() {
           _messages.add({
@@ -120,7 +149,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 120,
@@ -129,6 +158,14 @@ class _ChatBotPageState extends State<ChatBotPage> {
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('currentSessionId');
+    });
+    super.dispose();
   }
 
   @override
@@ -163,12 +200,14 @@ class _ChatBotPageState extends State<ChatBotPage> {
               itemBuilder: (context, index) {
                 if (_isBotTyping && index == _messages.length) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     child: Row(
                       children: const [
                         CircleAvatar(radius: 12, backgroundColor: Colors.grey),
                         SizedBox(width: 8),
-                        Text("Typing...", style: TextStyle(color: Colors.grey)),
+                        Text("Typing...",
+                            style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   );
@@ -176,9 +215,9 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
                 final msg = _messages[index];
                 return ChatMessage(
-                  text: msg['text'],
-                  isUser: msg['isUser'],
-                  timestamp: msg['timestamp'],
+                  text: msg['text'] ?? '',
+                  isUser: msg['isUser'] == true,
+                  timestamp: msg['timestamp'] ?? DateTime.now(),
                 );
               },
             ),
@@ -186,12 +225,16 @@ class _ChatBotPageState extends State<ChatBotPage> {
           SafeArea(
             child: Container(
               margin: const EdgeInsets.all(10),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 3)),
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 5,
+                      offset: Offset(0, 3)),
                 ],
               ),
               child: Row(
@@ -202,7 +245,8 @@ class _ChatBotPageState extends State<ChatBotPage> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: _sendMessage,
                       decoration: const InputDecoration(
-                        hintText: "Ask about SOS, Safe Routes, or Call features...",
+                        hintText:
+                        "Ask about SOS, Safe Routes, or Call features...",
                         border: InputBorder.none,
                       ),
                     ),

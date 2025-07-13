@@ -11,9 +11,9 @@ class ChatMessageModel {
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
-      text: json['text'],
-      isUser: json['isUser'],
-      timestamp: DateTime.parse(json['timestamp']),
+      text: json['text'] ?? '',
+      isUser: json['isUser'] == true,
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
     );
   }
 }

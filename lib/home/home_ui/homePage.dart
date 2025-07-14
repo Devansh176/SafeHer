@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:safer/FamilyTracker/FamilyTrackerPage.dart';
 import 'package:safer/home/chatbot/chatbot_page.dart';
 import 'package:safer/home/contacts_ui/contacts_call_page.dart';
 import 'package:safer/home/contacts_ui/Contact_location_Page.dart';
@@ -17,6 +18,7 @@ import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart
 import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
 import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_state.dart';
 import 'package:safer/login/login_ui/loginPage.dart';
+import '../../LegalAwareness/LegalAwarenessPage.dart';
 import '../SOS.dart';
 
 class HomePage extends StatefulWidget {
@@ -153,6 +155,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     _buildMoreButtons(width, height),
                     SizedBox(height: height * 0.04),
                     _buildSafetyTips(width, height),
+                    SizedBox(height: height * 0.08),
+                    _buildLegalAwarenessCard(width, height),
+                    SizedBox(height: height * 0.03),
+                    _buildFamilyRelationshipTrackerCard(width, height),
+                    SizedBox(height: height * 0.095),
                   ],
                 ),
               ),
@@ -445,6 +452,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
 
 
+
+
   Drawer _buildDrawer() {
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -550,6 +559,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
     );
   }
+
   Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(
@@ -571,6 +581,102 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       hoverColor: Colors.white10,
       splashColor: Colors.teal.withOpacity(0.2),
+    );
+  }
+
+  Widget _buildLegalAwarenessCard(double width, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LegalAwarenessPage()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: width * 0.015),
+        padding: EdgeInsets.all(width * 0.045),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF556B2F), Color(0xFF8FBC8F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.greenAccent.withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.gavel_rounded, size: 32, color: Colors.white),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                "Know Your Rights:\nLegal Help & Protection",
+                style: GoogleFonts.poppins(
+                  fontSize: width * 0.038,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFamilyRelationshipTrackerCard(double width, double height) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FamilyTrackerPage()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: width * 0.015),
+        padding: EdgeInsets.all(width * 0.045),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4A148C), Color(0xFF7B1FA2)], // Deep purple tones
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurpleAccent.withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.family_restroom, size: 32, color: Colors.white),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                "Track Family Behavior:\nHome Safety & Relationships",
+                style: GoogleFonts.poppins(
+                  fontSize: width * 0.038,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 18),
+          ],
+        ),
+      ),
     );
   }
 }

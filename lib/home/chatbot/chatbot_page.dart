@@ -127,7 +127,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
       } else {
         setState(() {
           _messages.add({
-            'text': 'Server error: ${response.statusCode}',
+            'text': 'Server error: \${response.statusCode}',
             'isUser': false,
             'timestamp': DateTime.now(),
           });
@@ -170,15 +170,18 @@ class _ChatBotPageState extends State<ChatBotPage> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      backgroundColor: Colors.green[50],
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         title: const Text("SafeHer Assistant"),
-        backgroundColor: Colors.green[700],
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const Icon(Icons.history, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -225,16 +228,21 @@ class _ChatBotPageState extends State<ChatBotPage> {
           SafeArea(
             child: Container(
               margin: const EdgeInsets.all(10),
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: LinearGradient(
+                  colors: [Color(0xFF00C9A7).withOpacity(0.3), Colors.white12],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
+                border: Border.all(color: Colors.white24, width: 1.5),
+                boxShadow: [
                   BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 5,
-                      offset: Offset(0, 3)),
+                    color: Colors.tealAccent.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: Row(
@@ -242,17 +250,20 @@ class _ChatBotPageState extends State<ChatBotPage> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      style: const TextStyle(color: Colors.white),
+                      cursorColor: Colors.tealAccent,
                       textInputAction: TextInputAction.send,
                       onSubmitted: _sendMessage,
                       decoration: const InputDecoration(
                         hintText:
                         "Ask about SOS, Safe Routes, or Call features...",
+                        hintStyle: TextStyle(color: Colors.white54),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.send, color: Colors.green),
+                    icon: const Icon(Icons.send, color: Colors.tealAccent),
                     onPressed: () => _sendMessage(_controller.text),
                   )
                 ],

@@ -78,7 +78,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
 
-
   @override
   void dispose() {
     _typingController.dispose();
@@ -87,14 +86,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-
-
   void getDisplayName() {
     final user = FirebaseAuth.instance.currentUser;
     setState(() {
       displayName = user?.displayName ?? 'User';
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +122,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu, color: Colors.white),
               onPressed: () => Scaffold.of(context).openDrawer(),
+              splashRadius: 24,
+              tooltip: 'Menu',
             ),
           ),
         ),
@@ -160,41 +160,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ],
         ),
         floatingActionButton: Animate(
-          onPlay: (controller) => controller.repeat(reverse: true),
-          effects: [FadeEffect(duration: 500.ms), SlideEffect(begin: Offset(0, 0.5))],
+          effects: [
+            SlideEffect(begin: Offset(0, 1), curve: Curves.easeOut, duration: 600.ms),
+            FadeEffect(duration: 600.ms),
+          ],
           child: GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatBotPage())),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(40),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF00FFE0), Color(0xFF00BFA6)],
+                  colors: [Color(0xFF00C9A7), Color(0xFF007F6C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.tealAccent.withOpacity(0.4),
-                    blurRadius: 15,
+                    color: Colors.tealAccent.withOpacity(0.3),
+                    blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withOpacity(0.15),
                     blurRadius: 6,
-                    offset: const Offset(0, 4),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Animate(
-                    onPlay: (controller) => controller.repeat(reverse: true),
-                    effects: [FadeEffect(duration: 500.ms), SlideEffect(begin: Offset(0, 0.5))],
-                    child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
-                  ),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.smart_toy_outlined, color: Colors.white),
+                  const SizedBox(width: 10),
                   Text(
                     "Assistant",
                     style: GoogleFonts.poppins(
@@ -448,43 +447,130 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Drawer _buildDrawer() {
     return Drawer(
-      child: Column(
+      backgroundColor: Colors.transparent,
+      child: Stack(
         children: [
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+          // Background blur effect
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.15)),
+                ),
               ),
             ),
-            accountName: Text(displayName),
-            accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? ''),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: NetworkImage(
-                FirebaseAuth.instance.currentUser?.photoURL ?? 'https://www.gravatar.com/avatar/placeholder',
+          ),
+
+          Column(
+            children: [
+              const SizedBox(height: 40),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00C9A7), Color(0xFF007F6C)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.tealAccent.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundImage: NetworkImage(
+                          FirebaseAuth.instance.currentUser?.photoURL ??
+                              'https://www.gravatar.com/avatar/placeholder',
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              FirebaseAuth.instance.currentUser?.email ?? '',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.call),
-            title: const Text("Contacts to Call"),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsPage())),
-          ),
-          ListTile(
-            leading: const Icon(Icons.location_on),
-            title: const Text("Location Contacts"),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationContactsPage())),
-          ),
-          const Spacer(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text("Logout"),
-            onTap: () {
-              FirebaseAuth.instance.signOut();
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-            },
+
+              const SizedBox(height: 20),
+              _drawerItem(Icons.call, "Contacts to Call", () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactsPage()));
+              }),
+              _drawerItem(Icons.location_on, "Location Contacts", () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationContactsPage()));
+              }),
+              const Spacer(),
+              _drawerItem(Icons.logout, "Logout", () {
+                FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+              }),
+              const SizedBox(height: 30),
+            ],
           ),
         ],
       ),
+    );
+  }
+  Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: Colors.tealAccent,
+        shadows: [
+          Shadow(color: Colors.tealAccent.withOpacity(0.5), blurRadius: 10),
+        ],
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      hoverColor: Colors.white10,
+      splashColor: Colors.teal.withOpacity(0.2),
     );
   }
 }

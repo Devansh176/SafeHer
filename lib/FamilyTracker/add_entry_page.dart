@@ -37,8 +37,10 @@ class _AddEntryPageState extends State<AddEntryPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Entry saved successfully!", style: GoogleFonts.poppins()),
-            backgroundColor: Colors.purple,
+            content: Text("Entry saved successfully!", style: GoogleFonts.poppins(
+              color: Colors.deepPurple
+            )),
+            backgroundColor: Color(0xFFF5EEF8),
           ),
         );
       }
@@ -66,7 +68,7 @@ class _AddEntryPageState extends State<AddEntryPage> {
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF5EEF8), Color(0xFFE8DAEF)], // Soft pastel purple background
+            colors: [Color(0xFFF5EEF8), Color(0xFFE8DAEF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),

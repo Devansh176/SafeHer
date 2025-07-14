@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'JournalDetailPage.dart';
 import 'add_entry_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,9 +59,23 @@ class FamilyTrackerPage extends StatelessWidget {
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         final log = docs[index];
-                        return _logCard(
-                          date: log['date'],
-                          entry: log['entry'],
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => JournalDetailPage(
+                                  date: log['date'],
+                                  entry: log['entry'],
+                                ),
+                              ),
+                            );
+                          },
+                          child: _logCard(
+                            date: log['date'],
+                            entry: log['entry'],
+                            isPreview: true,
+                          ),
                         );
                       },
                     );
@@ -105,7 +120,11 @@ class FamilyTrackerPage extends StatelessWidget {
     );
   }
 
-  Widget _logCard({required String date, required String entry}) {
+  Widget _logCard({required String date, required String entry, bool isPreview = false}) {
+    final previewText = isPreview
+        ? entry.split('\n').first.trim()  // First line as title
+        : entry;
+
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -125,11 +144,13 @@ class FamilyTrackerPage extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              entry,
+              previewText,
               style: GoogleFonts.poppins(
                 fontSize: 14.5,
                 color: Colors.black87,
               ),
+              maxLines: isPreview ? 2 : null,
+              overflow: isPreview ? TextOverflow.ellipsis : null,
             ),
           ],
         ),

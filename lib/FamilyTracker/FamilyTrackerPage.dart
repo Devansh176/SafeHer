@@ -365,6 +365,7 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
 
     return Stack(
       children: [
+        // Background container
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 4),
@@ -373,7 +374,7 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
             gradient: LinearGradient(
               colors: [
                 Colors.deepPurple.withOpacity(0.23),
-                Colors.deepPurpleAccent.withOpacity(0.15)
+                Colors.deepPurpleAccent.withOpacity(0.15),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -387,6 +388,8 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
             ],
           ),
         ),
+
+        // Glassmorphic foreground
         ClipRRect(
           borderRadius: BorderRadius.circular(18),
           child: BackdropFilter(
@@ -399,28 +402,51 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withOpacity(0.08)),
               ),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    date,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.deepPurpleAccent,
+                  // Entry content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          date,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurpleAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          preview,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white,
+                            height: 1.4,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    preview,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      height: 1.4,
+
+                  // Swipe hint icon (trash bin or arrow)
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                    child: const Icon(
+                      Icons.swipe_left_rounded,
+                      color: Colors.white60,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),

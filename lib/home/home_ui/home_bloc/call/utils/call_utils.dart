@@ -10,7 +10,7 @@ import '../../../../../repositories/contacts_repository.dart';
 
 void clickToCall(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
-  String? contactsJson = prefs.getString('selected_contacts');
+  String? contactsJson = prefs.getString('selected_call_contacts');
 
   if (contactsJson == null || contactsJson.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(

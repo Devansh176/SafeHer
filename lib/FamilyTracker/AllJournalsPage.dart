@@ -1,19 +1,24 @@
-// lib/all_journals_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'JournalDetailPage.dart';
 
-class AllJournalsPage extends StatelessWidget {
+class AllJournalsPage extends StatefulWidget {
   const AllJournalsPage({super.key});
+
+  @override
+  State<AllJournalsPage> createState() => _AllJournalsPageState();
+}
+
+class _AllJournalsPageState extends State<AllJournalsPage> {
+  String searchQuery = "";
 
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      // 🔥 Matching gradient background like JournalPage
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -25,7 +30,7 @@ class AllJournalsPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // 🔥 Custom heading like Journal page
+              // Page Heading
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
@@ -38,6 +43,33 @@ class AllJournalsPage extends StatelessWidget {
                 ),
               ),
 
+              // 🔍 Search Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextField(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "Search journals...",
+                    hintStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.black.withOpacity(0.3),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value.toLowerCase();
+                    });
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 🔥 Journals List
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -53,7 +85,8 @@ class AllJournalsPage extends StatelessWidget {
                       );
                     }
                     if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.white));
+                      return const Center(
+                          child: CircularProgressIndicator(color: Colors.white));
                     }
 
                     final docs = snapshot.data!.docs;
@@ -65,13 +98,28 @@ class AllJournalsPage extends StatelessWidget {
                       );
                     }
 
+                    // 🔍 Filter journals by search query
+                    final filteredDocs = docs.where((log) {
+                      final preview =
+                      log['entry'].toString().split('\n').first.trim();
+                      return preview.toLowerCase().contains(searchQuery);
+                    }).toList();
+
+                    if (filteredDocs.isEmpty) {
+                      return const Center(
+                        child: Text("No matching journals.",
+                            style: TextStyle(color: Colors.white70)),
+                      );
+                    }
+
                     return ListView.separated(
                       padding: const EdgeInsets.all(16),
-                      itemCount: docs.length,
+                      itemCount: filteredDocs.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
-                        final log = docs[index];
-                        final preview = log['entry'].toString().split('\n').first.trim();
+                        final log = filteredDocs[index];
+                        final preview =
+                        log['entry'].toString().split('\n').first.trim();
 
                         return GestureDetector(
                           onTap: () {
@@ -112,7 +160,9 @@ class AllJournalsPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  preview.isEmpty ? "Untitled Entry" : preview,
+                                  preview.isEmpty
+                                      ? "Untitled Entry"
+                                      : preview,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(

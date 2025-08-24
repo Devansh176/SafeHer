@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'AllJournalsPage.dart';
 import 'JournalDetailPage.dart';
 import 'add_entry_page.dart';
 
@@ -73,7 +74,7 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 25),
-                        _sectionTitle("\ud83d\udcd8 Private Journal"),
+                        _sectionTitleWithLink("📘 Private Journal"),
                         const SizedBox(height: 18),
                         _calendarTimeline(),
                         const SizedBox(height: 12),
@@ -170,6 +171,7 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
     );
   }
 
+
   Widget _calendarTimeline() {
     final now = DateTime.now();
     final days = List.generate(10, (i) => now.subtract(Duration(days: i)));
@@ -250,6 +252,48 @@ class _FamilyTrackerPageState extends State<FamilyTrackerPage>
       ),
     );
   }
+
+  Widget _sectionTitleWithLink(String title) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.deepPurpleAccent.shade100,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AllJournalsPage()),
+              );
+            },
+            icon: const Icon(Icons.menu_book, size: 18),
+            label: const Text(
+              "View All",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   Widget _entryList() {
     return StreamBuilder<QuerySnapshot>(

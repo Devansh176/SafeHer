@@ -1,0 +1,147 @@
+// lib/all_journals_page.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'JournalDetailPage.dart';
+
+class AllJournalsPage extends StatelessWidget {
+  const AllJournalsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+
+    return Scaffold(
+      // 🔥 Matching gradient background like JournalPage
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 🔥 Custom heading like Journal page
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "All Journals",
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('relationship_logs')
+                      .where('userId', isEqualTo: userId)
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text("Something went wrong",
+                            style: TextStyle(color: Colors.white)),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.white));
+                    }
+
+                    final docs = snapshot.data!.docs;
+
+                    if (docs.isEmpty) {
+                      return const Center(
+                        child: Text("No journals found.",
+                            style: TextStyle(color: Colors.white70)),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: docs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final log = docs[index];
+                        final preview = log['entry'].toString().split('\n').first.trim();
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => JournalDetailPage(
+                                  date: log['date'],
+                                  entry: log['entry'],
+                                  docId: log.id,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.deepPurpleAccent.withOpacity(0.25),
+                                  Colors.blueAccent.withOpacity(0.20),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.2), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.4),
+                                  blurRadius: 10,
+                                  offset: const Offset(3, 6),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  preview.isEmpty ? "Untitled Entry" : preview,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  log['date'],
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

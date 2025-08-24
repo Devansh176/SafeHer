@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatBotPage extends StatefulWidget {
   final String uid;
@@ -23,33 +22,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
   static const String geminiUrl =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-  late final String _prefsKey;
-
-  @override
-  void initState() {
-    super.initState();
-    _prefsKey = "chat_history_${widget.uid}";
-    _loadChatHistory();
-  }
-
-  Future<void> _loadChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_prefsKey) ?? [];
-    setState(() {
-      _messages.addAll(stored.map((s) {
-        final m = jsonDecode(s);
-        return {"role": m["role"] ?? "user", "text": m["text"] ?? ""};
-      }));
-    });
-    await _scrollToBottom();
-  }
-
-  Future<void> _saveChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = _messages.map((m) => jsonEncode(m)).toList();
-    await prefs.setStringList(_prefsKey, jsonList);
-  }
-
   Future<void> _scrollToBottom() async {
     await Future.delayed(const Duration(milliseconds: 80));
     if (!_scrollController.hasClients) return;
@@ -69,7 +41,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
       _isLoading = true;
     });
     _controller.clear();
-    await _saveChatHistory();
     await _scrollToBottom();
 
     late String reply;
@@ -83,7 +54,6 @@ class _ChatBotPageState extends State<ChatBotPage> {
       _messages.add({"role": "model", "text": reply});
       _isLoading = false;
     });
-    await _saveChatHistory();
     await _scrollToBottom();
   }
 

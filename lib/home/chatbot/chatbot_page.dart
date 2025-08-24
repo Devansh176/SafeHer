@@ -1,14 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'chat_message.dart';
-import 'chat_history_page.dart';
-
 class ChatBotPage extends StatefulWidget {
-  const ChatBotPage({super.key});
+  final String uid;
+  const ChatBotPage({super.key, required this.uid});
 
   @override
   State<ChatBotPage> createState() => _ChatBotPageState();
@@ -17,254 +15,231 @@ class ChatBotPage extends StatefulWidget {
 class _ChatBotPageState extends State<ChatBotPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, String>> _messages = [];
+  bool _isLoading = false;
 
-  bool _isBotTyping = false;
-  late String userUid;
-  late String currentSessionId;
+  // Gemini API config
+  static const String geminiApiKey = "AIzaSyCCczbKw7gsqFB1G-TYqRd9R88zOmRKm_8";
+  static const String geminiUrl =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
+  late final String _prefsKey;
 
   @override
   void initState() {
     super.initState();
-    userUid = FirebaseAuth.instance.currentUser!.uid;
-    _initSession();
-  }
-
-  Future<void> _initSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    currentSessionId = prefs.getString('currentSessionId') ?? '';
-
-    if (currentSessionId.isEmpty) {
-      final response = await http.post(
-        Uri.parse('http://192.168.1.3:8080/api/chat/session'),
-        headers: {'X-USER-UID': userUid},
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        currentSessionId = json['sessionId'];
-        await prefs.setString('currentSessionId', currentSessionId);
-      }
-    }
-
+    _prefsKey = "chat_history_${widget.uid}";
     _loadChatHistory();
   }
 
-  void _loadChatHistory() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://192.168.1.3:8080/api/chat/history/$currentSessionId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-USER-UID': userUid,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> chatList = jsonDecode(response.body);
-        setState(() {
-          _messages.clear();
-          _messages.addAll(chatList.map((msg) => {
-            'text': msg['text'],
-            'isUser': msg['isUser'] == true,
-            'timestamp': DateTime.tryParse(msg['timestamp'] ?? '') ??
-                DateTime.now(),
-          }));
-        });
-        _scrollToBottom();
-      }
-    } catch (e) {
-      print("Failed to load history: $e");
-    }
+  Future<void> _loadChatHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_prefsKey) ?? [];
+    setState(() {
+      _messages.addAll(stored.map((s) {
+        final m = jsonDecode(s);
+        return {"role": m["role"] ?? "user", "text": m["text"] ?? ""};
+      }));
+    });
+    await _scrollToBottom();
   }
 
-  void _sendMessage(String userText) {
-    if (userText.trim().isEmpty) return;
+  Future<void> _saveChatHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = _messages.map((m) => jsonEncode(m)).toList();
+    await prefs.setStringList(_prefsKey, jsonList);
+  }
+
+  Future<void> _scrollToBottom() async {
+    await Future.delayed(const Duration(milliseconds: 80));
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent + 120,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _onSubmit(String text) async {
+    final message = text.trim();
+    if (message.isEmpty) return;
 
     setState(() {
-      _messages.add({
-        'text': userText.trim(),
-        'isUser': true,
-        'timestamp': DateTime.now(),
-      });
+      _messages.add({"role": "user", "text": message});
+      _isLoading = true;
     });
-
     _controller.clear();
-    _scrollToBottom();
+    await _saveChatHistory();
+    await _scrollToBottom();
 
-    _getBotResponse(userText.trim());
-  }
-
-  void _getBotResponse(String input) async {
-    setState(() => _isBotTyping = true);
-
+    late String reply;
     try {
-      final response = await http.post(
-        Uri.parse('http://192.168.1.3:8080/api/chat'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-USER-UID': userUid,
-        },
-        body: jsonEncode({
-          'message': input,
-          'sessionId': currentSessionId,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        final botReply =
-            json['response'] ?? 'Sorry, I didn\'t understand that.';
-
-        setState(() {
-          _messages.add({
-            'text': botReply,
-            'isUser': false,
-            'timestamp': DateTime.now(),
-          });
-          _isBotTyping = false;
-        });
-      } else {
-        setState(() {
-          _messages.add({
-            'text': 'Server error: \${response.statusCode}',
-            'isUser': false,
-            'timestamp': DateTime.now(),
-          });
-          _isBotTyping = false;
-        });
-      }
+      reply = await _geminiAnswer();
     } catch (e) {
-      setState(() {
-        _messages.add({
-          'text': 'Failed to connect to backend.',
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-        _isBotTyping = false;
-      });
+      reply = "Something went wrong: $e";
     }
 
-    _scrollToBottom();
+    setState(() {
+      _messages.add({"role": "model", "text": reply});
+      _isLoading = false;
+    });
+    await _saveChatHistory();
+    await _scrollToBottom();
   }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 120,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  List<Map<String, dynamic>> _buildGeminiHistory({int keepLast = 14}) {
+    final start =
+    _messages.length > keepLast ? _messages.length - keepLast : 0;
+    final recent = _messages.sublist(start);
+    return recent
+        .map((m) => {
+      "role": m["role"] == "user" ? "user" : "model",
+      "parts": [
+        {"text": m["text"] ?? ""}
+      ]
+    })
+        .toList();
   }
 
-  @override
-  void dispose() {
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove('currentSessionId');
-    });
-    super.dispose();
+  Future<String> _geminiAnswer() async {
+    final contents = _buildGeminiHistory();
+    final body = {
+      "systemInstruction": {
+        "parts": [
+          {
+            "text":
+            "You are SafeHer's helpful AI assistant. Always give useful, clear, and positive answers. If asked about distances or routes, provide real numbers or the best possible guidance."
+          }
+        ]
+      },
+      "contents": contents,
+      "generationConfig": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "maxOutputTokens": 512,
+      },
+    };
+
+    final uri = Uri.parse("$geminiUrl?key=$geminiApiKey");
+    final res = await http
+        .post(uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+
+    if (res.statusCode != 200) {
+      return "AI error ${res.statusCode}: ${res.body}";
+    }
+
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final text =
+    (data["candidates"]?[0]?["content"]?["parts"]?[0]?["text"] as String?)
+        ?.trim();
+    return (text == null || text.isEmpty)
+        ? "I’m not sure, but here’s my best guess!"
+        : text;
   }
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color(0xFF0F0F0F),
       appBar: AppBar(
-        title: const Text("SafeHer Assistant"),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ChatHistoryPage(),
-                ),
-              );
-            },
-          ),
-        ],
+        backgroundColor: Colors.black,
+        title: const Text("SafeHer ChatBot",
+            style: TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.pink),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              itemCount: _messages.length + (_isBotTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isBotTyping && index == _messages.length) {
-                  return Padding(
+              padding: const EdgeInsets.all(10),
+              itemCount: _messages.length,
+              itemBuilder: (context, i) {
+                final msg = _messages[i];
+                final isUser = msg["role"] == "user";
+                return Align(
+                  alignment:
+                  isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    child: Row(
-                      children: const [
-                        CircleAvatar(radius: 12, backgroundColor: Colors.grey),
-                        SizedBox(width: 8),
-                        Text("Typing...",
-                            style: TextStyle(color: Colors.grey)),
-                      ],
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isUser ? Colors.pink : const Color(0xFF1C1C1C),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isUser
+                            ? Colors.pinkAccent.withOpacity(0.6)
+                            : Colors.white12,
+                        width: 1,
+                      ),
                     ),
-                  );
-                }
-
-                final msg = _messages[index];
-                return ChatMessage(
-                  text: msg['text'] ?? '',
-                  isUser: msg['isUser'] == true,
-                  timestamp: msg['timestamp'] ?? DateTime.now(),
+                    child: SelectableText(
+                      msg["text"] ?? "",
+                      style: TextStyle(
+                        color: isUser
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.92),
+                        fontSize: 15.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
           ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: CircularProgressIndicator(color: Colors.pink),
+            ),
           SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00C9A7).withOpacity(0.3), Colors.white12],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white24, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.tealAccent.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      style: const TextStyle(color: Colors.white),
-                      cursorColor: Colors.tealAccent,
                       textInputAction: TextInputAction.send,
-                      onSubmitted: _sendMessage,
-                      decoration: const InputDecoration(
-                        hintText:
-                        "Ask about SOS, Safe Routes, or Call features...",
-                        hintStyle: TextStyle(color: Colors.white54),
-                        border: InputBorder.none,
+                      onSubmitted: _onSubmit,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: "Ask anything…",
+                        hintStyle: const TextStyle(color: Colors.white60),
+                        filled: true,
+                        fillColor: const Color(0xFF1A1A1A),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Colors.tealAccent),
-                    onPressed: () => _sendMessage(_controller.text),
+                  const SizedBox(width: 6),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.pink,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.send, color: Colors.white),
+                      onPressed: () {
+                        final v = _controller.text;
+                        if (v.trim().isNotEmpty) _onSubmit(v);
+                      },
+                    ),
                   )
                 ],
               ),

@@ -172,7 +172,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             FadeEffect(duration: 600.ms),
           ],
           child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatBotPage())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ChatBotPage(uid: FirebaseAuth.instance.currentUser!.uid),
+              ),
+            ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               margin: const EdgeInsets.only(bottom: 10),

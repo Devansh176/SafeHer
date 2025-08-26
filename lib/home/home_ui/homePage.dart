@@ -19,6 +19,7 @@ import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts
 import 'package:safer/home/home_ui/home_bloc/location_contacts/location_contacts_state.dart';
 import 'package:safer/login/login_ui/loginPage.dart';
 import '../../LegalAwareness/LegalAwarenessPage.dart';
+import '../../services/notification_service.dart';
 import '../SOS.dart';
 
 class HomePage extends StatefulWidget {
@@ -159,6 +160,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     _buildLegalAwarenessCard(width, height),
                     SizedBox(height: height * 0.03),
                     _buildFamilyRelationshipTrackerCard(width, height),
+                    SizedBox(height: height * 0.03),
+                    _buildCheckInReminderCard(width, height),
                     SizedBox(height: height * 0.095),
                   ],
                 ),
@@ -307,6 +310,60 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildCheckInReminderCard(double width, double height) {
+    return GestureDetector(
+      onTap: () async {
+        final when = DateTime.now().add(const Duration(minutes: 30));
+        await NotificationService().scheduleCheckInReminderSmart(
+          notificationId: 999,
+          when: when,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Check-in reminder set for 30 minutes")),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: width * 0.015),
+        padding: EdgeInsets.all(width * 0.045),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00897B), Color(0xFF26A69A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.tealAccent.withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.timer, size: 32, color: Colors.white),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                "Set Safety Check-In Reminder",
+                style: GoogleFonts.poppins(
+                  fontSize: width * 0.038,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+
   Widget _glassButton(
       IconData icon,
       String label,
@@ -454,9 +511,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
-
-
 
 
   Drawer _buildDrawer() {

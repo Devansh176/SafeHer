@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:safer/home/home_ui/home_bloc/contacts/contacts_bloc.dart';
 import 'package:safer/home/home_ui/home_bloc/location/location_sharing_bloc.dart';
 import 'package:safer/repositories/contacts_repository.dart';
@@ -9,12 +10,32 @@ import 'firebase_options.dart';
 import 'home/home_ui/homePage.dart';
 import 'home/home_ui/home_bloc/location_contacts/location_contacts_bloc.dart';
 import 'login/login_ui/loginPage.dart';
+import 'services/notification_service.dart';
+
+Future<void> requestNotificationPermission() async {
+  final plugin = FlutterLocalNotificationsPlugin();
+
+  // Android 13+
+  await plugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
+
+  // iOS
+  await plugin
+      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(alert: true, badge: true, sound: true);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize SafeHer Notification Service
+  await NotificationService().init();
+  await requestNotificationPermission();
+
   runApp(const MyApp());
 }
 
